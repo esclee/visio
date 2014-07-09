@@ -28,6 +28,8 @@ sent_score = defaultdict(int)
 oper_list = raw_input("List operations: ").split()
 ppg_list = raw_input("List ppgs: ").split()
 goal_list = raw_input("List goals: ").split()
+po_list = raw_input("List problem objectives: ").split()
+output_list = raw_input("List outputs: ").split()
 
 # Select report type: it has to be one of the five, and can only select one
 report_list = ['Summary Protetion Assessment', 'Operations Plan Document', 'Year-End Report', 'Mid Year Report', 'Operational Highlights Report']
@@ -44,6 +46,8 @@ while year < 2010 or year > 2020:
 # oper_list = ['7VR', '7VC']
 # ppg_list = ['LRZQ', 'LTFL', 'LP61']
 # goal_list = ['EM']
+# po_list = ['c70f5d80-a7cd-4d68-a085-aa04702c0fea', 'acb439ae-0d06-463c-b3c9-030f9bc889f8']
+# output_list = []
 
 # Makes mysql query string
 
@@ -51,36 +55,29 @@ condition_str = ""
 oper_str = ""
 ppg_str = ""
 goal_str = ""
+po_str = ""
+output_str = ""
 
 if oper_list:
-    oper_str = "(operation_id = "
-    for oper in oper_list:
-        oper_str += "'" + oper + "'"
-        if oper_list.index(oper) < len(oper_list) - 1:
-            oper_str += " OR "
-        else: oper_str += ")"
+    oper_str ="(" + " OR ".join(["operation_id = " + "'" + oper + "'" for oper in oper_list]) + ")"
 
 if ppg_list:
-    ppg_str = "(ppg_id = "
-    for ppg in ppg_list:
-        ppg_str += "'" + ppg + "'"
-        if ppg_list.index(ppg) < len(ppg_list) - 1:
-            ppg_str += " OR "
-        else: ppg_str += ")"
+    ppg_str ="(" + " OR ".join(["ppg_id = " + "'" + ppg + "'" for ppg in ppg_list]) + ")"
             
 if goal_list:
-    goal_str = "(goal_id = "
-    for goal in goal_list:
-        goal_str += "'" + goal + "'"
-        if goal_list.index(goal) < len(goal_list) - 1:
-            goal_str += " OR "
-        else: goal_str += ")"
+    goal_str ="(" + " OR ".join(["goal_id = " + "'" + goal + "'" for goal in goal_list]) + ")"
 
-conditions = [oper_str, ppg_str, goal_str]
+if po_list:
+    po_str = "(" + " OR ".join(["problem_objective_id = " + "'" + po + "'" for po in po_list]) + ")"
+    
+if output_list:
+    output_str = "(" + " OR ".join(["output_id = " + "'" + output + "'" for output in output_list]) + ")"
+
+conditions = [oper_str, ppg_str, goal_str, po_str, output_str]
 
 condition_str = " WHERE " + "(report_type = " + "'" + report_type + "'" + ") AND (year = " + str(year) + ")"
 
-if oper_list or ppg_list or goal_list:
+if oper_list or ppg_list or goal_list or po_list or output_str:
     s = " AND ".join([x for x in conditions if x])
     condition_str = " AND ".join([condition_str, s])
 
@@ -177,8 +174,5 @@ while sent_sorted:
         break
     if scount > len(pg): break
     summary += sent + ' '
-print 'Summary: '
+
 print summary.encode('utf-8')
-print '\n'
-print 'Text: '    
-print text_eng.encode('utf-8')

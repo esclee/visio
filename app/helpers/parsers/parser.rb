@@ -12,6 +12,7 @@ module Parsers
 
     def csv_foreach(csv_filename, &block)
       begin
+        @counter = 0
         CSV.foreach(csv_filename, :headers => true, :col_sep => COL_SEP) do |row|
           mapped = replace_nulls row
           block.call(mapped)
@@ -51,11 +52,22 @@ module Parsers
 
       csvfields.each do |rails_attr, csvfield_attr|
         # If it's a lambda, call it
+        
+        
         if csvfield_attr.respond_to? :call
           element << instance_exec(row, &csvfield_attr)
         else
           element << row[csvfield_attr]
         end
+        
+        
+        #if row['AMOUNT'].to_i > 2147483647
+          #@counter += 1
+          
+          #if @counter >= 409
+          #require 'pry';binding.pry
+            #end
+        #end
       end
 
       # Add found_at parameter

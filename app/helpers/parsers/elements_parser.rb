@@ -158,7 +158,11 @@ module Parsers
                 values << row[attrs[:id]]
 
               end
-              @relations[association] << values
+              if values[0].nil?
+              elsif values[1].nil?
+              else
+                @relations[association] << values
+              end
             end
 
           end
@@ -191,6 +195,7 @@ module Parsers
       @relations.each do |relation, values|
         columns = relation.attribute_names.sort
         columns.delete 'id'
+        
         relation.import columns, values, :on_duplicate_key_update => columns
       end
 

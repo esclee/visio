@@ -44,7 +44,7 @@ class IndicatorDataControllerTest < ActionController::TestCase
   end
 
   test "index indicator data - strategy id" do
-    datum = IndicatorDatum.new()
+    datum = IndicatorDatum.new(:id => 'id')
     datum.operation = operations(:one)
     datum.plan = plans(:one)
     datum.ppg = ppgs(:one)
@@ -77,7 +77,7 @@ class IndicatorDataControllerTest < ActionController::TestCase
   end
 
   test "should get one new indicator data" do
-    datum = IndicatorDatum.new()
+    datum = IndicatorDatum.new(:id => 'id')
     datum.operation = operations(:one)
     datum.plan = plans(:one)
     datum.ppg = ppgs(:one)
@@ -100,7 +100,7 @@ class IndicatorDataControllerTest < ActionController::TestCase
   end
 
   test "should get one new indicator datum - filter_ids" do
-    datum = IndicatorDatum.new()
+    datum = IndicatorDatum.new(:id => 'id')
     datum.operation = operations(:one)
     datum.plan = plans(:one)
     datum.ppg = ppgs(:one)

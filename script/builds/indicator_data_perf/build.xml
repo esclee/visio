@@ -3,9 +3,9 @@
   <target name="indicator_data_perf">
     <sql
       driver="oracle.jdbc.OracleDriver"
-      url="jdbc:oracle:thin:@ironwood.svc.unicc.org:1521:GFPRD"
-      userid="FOCUS_READER"
-      password="Inquirer9"
+      url="jdbc:oracle:thin:@dn01.msrp.hcrnet.ch:1521:RAFCUAT"
+      userid="FOCUS_BI"
+      password="FOCUS_BI"
       print="true"
       showheaders="true"
       showtrailers="false"
@@ -14,7 +14,7 @@
       outputencoding="utf-8"
       output="generated_output.csv">
       <classpath>
-        <pathelement location="/Users/benrudolph/Dropbox/unhcr/vis/visio/visio/vendor/jars/ojdbc6.jar"/>
+        <pathelement location="/Users/esclee/Dropbox/axis/visio/vendor/jars/ojdbc6.jar"/>
       </classpath>
       <![CDATA[
       SELECT * FROM
@@ -44,14 +44,14 @@
 select obj.*
      , BI_PERFINDICATOR.ID                                AS PERFINDICATOR_RFID
      , BI_OUTPUTGRPPERFINDICATOR.ID                       AS PERFINDICATOR_ID
-     , ROUND(BI_OUTPUTGRPPERFINDICATOR.IMP_TARGET)      AS PERF_IMP_TARGET
-     , ROUND(BI_OUTPUTGRPPERFINDICATOR.COMP_TARGET)     AS PERF_COMP_TARGET
-     , ROUND(BI_OUTPUTGRPPERFINDICATOR.MID_YEAR_VALUE)  AS PERF_MID_YEAR_VALUE
-     , ROUND(BI_OUTPUTGRPPERFINDICATOR.YEAR_END_VALUE)  AS PERF_YEAR_END_VALUE
+     , ROUND(BI_OUTPUTGRPPERFINDICATOR.IMP_TARGET)        AS PERF_IMP_TARGET
+     , ROUND(BI_OUTPUTGRPPERFINDICATOR.COMP_TARGET)       AS PERF_COMP_TARGET
+     , ROUND(BI_OUTPUTGRPPERFINDICATOR.MID_YEAR_VALUE)    AS PERF_MID_YEAR_VALUE
+     , ROUND(BI_OUTPUTGRPPERFINDICATOR.YEAR_END_VALUE)    AS PERF_YEAR_END_VALUE
      , BI_OUTPUTGRP.RFOUTPUTID
-     , BI_OUTPUTGRP.TAG                                 AS PRIORITY
-     , BI_PERFINDICATOR.TYPE                            AS INDICATOR_TYPE
-     , BI_PERFINDICATOR.ISREVERSAL                      AS REVERSAL
+     , BI_OUTPUTGRP.TAG                                   AS PRIORITY
+     , BI_PERFINDICATOR.TYPE                              AS INDICATOR_TYPE
+     , BI_PERFINDICATOR.ISREVERSAL                        AS REVERSAL
 FROM obj
 INNER JOIN BI_OUTPUTGRP          ON OBJID=BI_OUTPUTGRP.OBJECTIVEID
 INNER JOIN BI_OUTPUTGRPPERFINDICATOR  ON BI_OUTPUTGRP.OUTPUTID =BI_OUTPUTGRPPERFINDICATOR.OUTPUT_ID

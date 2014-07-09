@@ -29,7 +29,7 @@ class IndicatorDatumTest < ActiveSupport::TestCase
 
   test "should correctly calculate strategy objectives ids" do
 
-    datum = IndicatorDatum.new()
+    datum = IndicatorDatum.new(:id => "id")
     datum.plan = plans(:one)
     datum.ppg = ppgs(:one)
     datum.goal = goals(:one)
