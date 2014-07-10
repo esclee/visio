@@ -238,5 +238,11 @@ if __name__ == "__main__":
     
     query_database(args.database)
     
-    print return_summary(text_eng)
-    print return_summary(text_fre)
+    print "Summary: "
+    print return_summary(text_eng).encode('utf-8')
+    
+    print '\n'
+    
+    print "Text: "
+    print text_eng.encode('utf-8')
+    print return_summary(text_fre).encode('utf-8')
