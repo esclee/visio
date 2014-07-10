@@ -1,3 +1,12 @@
+# Module: summarize.py
+# Usage: python summarize.py [token] -d [database yml] -r [redis yml]
+# ---------------------------------------------------------------------------
+# It takes the narrative texts that satisfy the query and summarizes
+# the text into a summary that is 1/4 of the length of the original text
+# or has no more sentences than the number of paragraphs in the original text.
+# It summarizes the French portion and the English portion of the text
+# separately.
+
 import nltk
 import csv
 from collections import *
@@ -9,6 +18,10 @@ import warnings
 import mysql.connector
 import random
 import yaml
+import redis
+import sys
+import argparse
+import json
 
 warnings.filterwarnings("ignore")
 
@@ -20,14 +33,11 @@ stopWordLang['french'] = set(stopwords.words('french'))
 sent_list = []
 sent_score = defaultdict(int)
 
-oper_list = ['7VR', '7VC']
-ppg_list = ['LRZQ', 'LTFL', 'LP61']
-goal_list = ['EM']
-po_list = ['c70f5d80-a7cd-4d68-a085-aa04702c0fea', 'acb439ae-0d06-463c-b3c9-030f9bc889f8']
-output_list = []
-report_list = ['Summary Protetion Assessment', 'Operations Plan Document', 'Year-End Report', 'Mid Year Report', 'Operational Highlights Report']
-report_type = ""
-year = 0
+# Method: detectLanguages
+# Usage: if detectLanguages(tokens) == 'english': ...
+# ----------------------------------------------------
+# It takes a tokenized text and determines if the text is
+# in French or English.
 
 def detectLanguages(tokens):
     words = [word.lower() for word in tokens]
@@ -39,8 +49,20 @@ def detectLanguages(tokens):
     else:
         return 'french'
         
+# Method: deletePunc
+# Usage: tokens = deletePunc(tokens)
+# ---------------------------------------------------
+# It takes a tokenized text and returns the text with all
+# punctuations stripped.
+
 def deletePunc(tokens):
     return [token for token in tokens if token not in set(string.punctuation)]
+    
+# Method: inter_score
+# Usage: score = inter_score(sent1, sent2)
+# ---------------------------------------------------
+# It takes two sentences and returns the intersection
+# score of the sentences.
     
 def inter_score(sent1, sent2):
     tok1 = nltk.word_tokenize(sent1)
@@ -49,10 +71,24 @@ def inter_score(sent1, sent2):
     tok2 = deletePunc(tok2)
     return float(2 * len([x for x in tok1 if x in tok2]))/(len(tok1) + len(tok2))
     
+# Method: checkValidSent
+# Usage: if checkValidSent(sent)
+# --------------------------------------
+# It takes a sentence and determines if
+# the sentence has non-punctuation tokens
+# in it.
+    
 def checkValidSent(sent):
     tok = nltk.word_tokenize(sent)
     tok = deletePunc(tok)
     return tok != []
+
+# Method: buildGraph
+# Usage: graph = buildGraph(sentList)
+# -------------------------------------------
+# It takes a list of sentences and builds a graph
+# where each node is a sentence and the weight of an edge
+# is the intersection score of its two endpoints.
 
 def buildGraph(sentList):
     gr = nx.Graph()
@@ -65,41 +101,13 @@ def buildGraph(sentList):
     
     return gr
 
-def set_oper_list(operlist):
-    global oper_list
-    oper_list = operlist
+# Method: make_query_string
+# Usage: querySt = make_query_string()
+# ----------------------------------------------
+# With the lists of conditions, it makes the condition
+# part of the SQL query string to be used.
 
-def set_ppg_list(ppglist):
-    global ppg_list
-    ppg_list = ppglist
-
-def set_goal_list(goallist):
-    global goal_list
-    goal_list = goallist
-
-def set_po_list(polist):
-    global po_list
-    po_list = polist
-
-def set_output_list(outputlist):
-    global output_list
-    output_list = outputlist
-
-def set_report_type(reporttype):
-    global report_type
-    if reporttype in report_list:
-        report_type = reporttype
-    else: print reporttype, " is invalid."
-
-def set_year(givenyear):
-    global year
-    if givenyear >= 2010 and givenyear <= 2020:
-        year = givenyear
-    else: print givenyear, " is invalid."
-
-def query_database():
-    global text_eng
-    global text_fre
+def make_query_string():
     if oper_list:
         oper_str ="(" + " OR ".join(["operation_id = " + "'" + oper + "'" for oper in oper_list]) + ")"
     else: oper_str = ""
@@ -127,8 +135,22 @@ def query_database():
     if oper_list or ppg_list or goal_list or po_list or output_str:
         s = " AND ".join([x for x in conditions if x])
         condition_str = " AND ".join([condition_str, s])
+    return condition_str
+
+# Method: query_database
+# Usage: query_database(dbyml)
+# -----------------------------------------------
+# It takes the address of the yml file and queries
+# the database to get the texts needed for the particular
+# query.
+
+def query_database(dbadd = 'config/database.yml'):
+    global text_eng
+    global text_fre
     
-    db = yaml.load(open('config/database.yml', 'rb'))['development']
+    condition_str = make_query_string()
+    
+    db = yaml.load(open(dbadd, 'rb'))['development']
     database = mysql.connector.connect(user = db['username'], database = db['database'], host = db['host'])
     cursor = database.cursor()
     
@@ -145,18 +167,25 @@ def query_database():
             else: text_fre = '\n'.join([text_fre, text])
 
     database.close()
+
+# Method: return_summary
+# Usage: summary = return_summary(text)
+# ----------------------------------------------
+# It takes a text and summarizes it using TextRank
+# algorithm. If the text is too long (> 150 sentences),
+# then it randomly picks 150 sentences before running TextRank.
     
-def return_summary():
-    sent_list = nltk.tokenize.sent_tokenize(text_eng)
+def return_summary(text):
+    sent_list = nltk.tokenize.sent_tokenize(text)
 
     # deletes sentences that are only made of punctuations
     sent_list = [sent for sent in sent_list if checkValidSent(sent)]
 
     # makes a list of paragraphs - used to count the number of paragraphs
-    pg = text_eng.splitlines(0)
+    pg = text.splitlines(0)
     pg = [par for par in pg if par != '']
 
-    baseline = len(text_eng)
+    baseline = len(text)
 
     # if tehre are too many sentences, this will pick 150 random sentences
     if len(sent_list) > 150:
@@ -181,3 +210,33 @@ def return_summary():
         summary += sent + ' '
 
     return summary
+
+if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description = 'Summarizer!')
+    parser.add_argument('token', type = str, help = 'token for redis')
+    parser.add_argument('-d', '--database', help= 'database yml file', required = True)
+    parser.add_argument('-r', '--redis', help= 'redis yml file')
+    args = parser.parse_args()
+    
+    if args.redis:
+        # set redis up from server
+        print "redis"
+    else:
+        r_server = redis.Redis()
+    # json_str = r_server.get(token)
+    json_str = '{"output_id": [], "ppg_id": ["LRZQ", "LTFL", "LP61"], "problem_objective_id": ["c70f5d80-a7cd-4d68-a085-aa04702c0fea", "acb439ae-0d06-463c-b3c9-030f9bc889f8"], "goal_id": ["EM"], "report_type": "Year-End Report", "year": 2013, "operation_id": ["7VR", "7VC"]}'
+    list_dict = json.loads(json_str)
+    
+    oper_list = list_dict["operation_id"]
+    ppg_list = list_dict["ppg_id"]
+    goal_list = list_dict["goal_id"]
+    po_list = list_dict["problem_objective_id"]
+    output_list = list_dict["output_id"]
+    report_type = list_dict["report_type"]
+    year = list_dict["year"]
+    
+    query_database(args.database)
+    
+    print return_summary(text_eng)
+    print return_summary(text_fre)
