@@ -240,9 +240,7 @@ if __name__ == "__main__":
     
     print "Summary: "
     print return_summary(text_eng).encode('utf-8')
-    
-    print '\n'
+    print return_summary(text_fre).encode('utf-8')
     
     print "Text: "
     print text_eng.encode('utf-8')
-    print return_summary(text_fre).encode('utf-8')
